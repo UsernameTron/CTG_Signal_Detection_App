@@ -83,7 +83,7 @@
     btnRow.className = 'aa-btn-row';
 
     var runBtn = Components.ActionButton({
-      label: _simRunning && !_simPaused ? 'Pause' : 'Run Agent Chain',
+      label: !_simRunning ? 'Run Agent Chain' : _simPaused ? 'Resume' : 'Pause',
       variant: 'primary',
       onClick: function() {
         if (!_simRunning) {
@@ -92,13 +92,13 @@
           _simIndex = 0;
           buildPanel();
           runSimulation();
-        } else if (_simPaused) {
-          _simPaused = false;
-          buildPanel();
-          runSimulation();
-        } else {
+        } else if (!_simPaused) {
           _simPaused = true;
-          buildPanel();
+          runBtn.textContent = 'Resume';
+        } else {
+          _simPaused = false;
+          runBtn.textContent = 'Pause';
+          runSimulation();
         }
       }
     });
@@ -121,7 +121,7 @@
     }
     _panel.appendChild(btnRow);
 
-    if (_simRunning && !_simPaused) {
+    if (_simRunning) {
       var liveHeader = document.createElement('div');
       liveHeader.className = 'aa-live-header';
       liveHeader.innerHTML = '<span class="live-dot"></span><span class="label-sm">LIVE SIMULATION</span>';
