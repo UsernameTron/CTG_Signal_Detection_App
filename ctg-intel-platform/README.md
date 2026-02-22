@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # CTG Sourcing Intelligence Platform
 
@@ -573,4 +573,3 @@ Working Prototype · February 2026
 [Live Demo →](https://ctg-intel-platform.netlify.app)
 
 </div>
-]]>
