@@ -502,36 +502,80 @@ Each prospect includes: complete firmographics, strain score with factor breakdo
 ## Project Structure
 
 ```
-ctg-intel-platform/
-├── index.html                  # SPA shell — sidebar nav + content panels
-├── netlify.toml                # Netlify deployment config
+├── .gitignore                      # OS artifacts exclusion
+├── CLAUDE.md                       # Agent governance framework
 ├── README.md
 │
-├── css/
-│   ├── obsidian.css            # Design system tokens (colors, typography, spacing)
-│   ├── shell.css               # Layout: sidebar, content areas, responsive grid
-│   ├── components.css          # Shared component styles (KPI cards, badges, charts)
-│   ├── command-center.css      # Section 01 styles
-│   ├── pipeline-intel.css      # Section 02 styles
-│   ├── strain-simulator.css    # Section 03 styles
-│   ├── revenue-model.css       # Section 04 styles
-│   ├── agent-architecture.css  # Section 05 styles
-│   ├── competitive-map.css     # Section 06 styles
-│   └── build-roadmap.css       # Section 07 styles
+├── ctg-intel-platform/             # Application source
+│   ├── index.html                  # SPA shell — sidebar nav + content panels
+│   ├── netlify.toml                # Netlify deployment config
+│   │
+│   ├── css/
+│   │   ├── obsidian.css            # Design system tokens (colors, typography, spacing)
+│   │   ├── shell.css               # Layout: sidebar, content areas, responsive grid
+│   │   ├── components.css          # Shared component styles (KPI cards, badges, charts)
+│   │   ├── command-center.css      # Section 01 styles
+│   │   ├── pipeline-intel.css      # Section 02 styles
+│   │   ├── strain-simulator.css    # Section 03 styles
+│   │   ├── revenue-model.css       # Section 04 styles
+│   │   ├── agent-architecture.css  # Section 05 styles
+│   │   ├── competitive-map.css     # Section 06 styles
+│   │   └── build-roadmap.css       # Section 07 styles
+│   │
+│   └── js/
+│       ├── app.js                  # Module registry, lazy loading, hash routing
+│       ├── shell.js                # Sidebar navigation management
+│       ├── data.js                 # Prospect database (30 records), platform constants
+│       ├── shared-components.js    # KPI cards, tier badges, radar charts, circular scores
+│       ├── command-center.js       # Section 01 module
+│       ├── pipeline-intel.js       # Section 02 module
+│       ├── strain-simulator.js     # Section 03 module
+│       ├── revenue-model.js        # Section 04 module
+│       ├── agent-architecture.js   # Section 05 module
+│       ├── competitive-map.js      # Section 06 module
+│       └── build-roadmap.js        # Section 07 module
 │
-└── js/
-    ├── app.js                  # Module registry, lazy loading, hash routing
-    ├── shell.js                # Sidebar navigation management
-    ├── data.js                 # Prospect database (30 records), platform constants
-    ├── shared-components.js    # KPI cards, tier badges, radar charts, circular scores
-    ├── command-center.js       # Section 01 module
-    ├── pipeline-intel.js       # Section 02 module
-    ├── strain-simulator.js     # Section 03 module
-    ├── revenue-model.js        # Section 04 module
-    ├── agent-architecture.js   # Section 05 module
-    ├── competitive-map.js      # Section 06 module
-    └── build-roadmap.js        # Section 07 module
+├── docs/                           # Documentation & visualizations
+│   ├── ADMIN_GUIDE.md              # Deployment & customization guide (9 sections)
+│   └── data-flow.html              # Interactive intelligence pipeline visualization
+│
+└── tasks/                          # Agent governance tracking
+    ├── todo.md                     # Current task plan with verification checklist
+    ├── lessons.md                  # Accumulated rules from past corrections
+    └── session-log.md              # Audit trail across sessions
 ```
+
+---
+
+## Documentation
+
+### Administrator Guide
+
+[`docs/ADMIN_GUIDE.md`](docs/ADMIN_GUIDE.md) — A step-by-step deployment and customization reference covering:
+
+- Data source configuration (full schema for all 5 data objects)
+- API key and endpoint setup for 12 enrichment services
+- Branding and design token customization
+- Module enable/disable configuration
+- Scoring model weight calibration
+- Deployment verification checklist
+
+Organized as executable task blocks optimized for rapid deployment.
+
+### How CTG Intelligence Works
+
+[`docs/data-flow.html`](docs/data-flow.html) — An interactive visualization of the intelligence pipeline designed for non-technical audiences. Open directly in any browser (no server required). Features:
+
+- 5-stage animated pipeline (Detect → Analyze → Recommend → Project → Learn)
+- Clickable stages with expanded explanations, visuals, and real examples
+- Animated data particles flowing between stages
+- Feedback loop visualization from monitoring back to scoring
+- Module mapping showing which pipeline stages feed each platform view
+- Obsidian dark theme matching the platform aesthetic
+
+### Agent Governance Framework
+
+[`CLAUDE.md`](CLAUDE.md) defines the AI agent operating protocol for development sessions. The [`tasks/`](tasks/) directory tracks active work, accumulated rules, and session history. This ensures continuity across sessions and prevents repeated mistakes.
 
 ---
 

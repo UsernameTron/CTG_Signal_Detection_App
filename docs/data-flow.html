@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How CTG Intelligence Works</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ═══ RESET & BASE ═══ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:             #09090B;
+      --surface:        #111113;
+      --surface-alt:    #18181B;
+      --border:         #27272A;
+      --border-active:  #3F3F46;
+      --text:           #FAFAFA;
+      --text-secondary: #A1A1AA;
+      --text-muted:     #71717A;
+      --text-faint:     #52525B;
+      --emerald:        #34D399;
+      --red:            #EF4444;
+      --amber:          #F59E0B;
+      --blue:           #3B82F6;
+      --violet:         #A78BFA;
+      --teal:           #14B8A6;
+      --emerald-muted:  rgba(52, 211, 153, 0.09);
+      --red-muted:      rgba(239, 68, 68, 0.09);
+      --amber-muted:    rgba(245, 158, 11, 0.09);
+      --blue-muted:     rgba(59, 130, 246, 0.09);
+      --violet-muted:   rgba(167, 139, 250, 0.09);
+      --font-sans:      'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono:      'JetBrains Mono', 'SF Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ═══ PAGE LAYOUT ═══ */
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 60px 40px 80px;
+    }
+
+    /* ═══ HEADER ═══ */
+    .header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .header-label {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--emerald);
+      background: var(--emerald-muted);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+      padding: 6px 16px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+    .header p {
+      font-size: 17px;
+      color: var(--text-secondary);
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    /* ═══ PIPELINE ═══ */
+    .pipeline {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 20px;
+      padding: 0 20px;
+    }
+
+    /* Connecting lines */
+    .pipeline-connector {
+      display: flex;
+      align-items: center;
+      height: 180px;
+      padding-top: 0;
+      position: relative;
+      width: 56px;
+      flex-shrink: 0;
+    }
+    .pipeline-connector .line {
+      width: 100%;
+      height: 2px;
+      background: var(--border);
+      position: relative;
+    }
+    .pipeline-connector .arrow {
+      position: absolute;
+      right: -1px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 8px solid var(--border-active);
+    }
+
+    /* Animated particle */
+    .pipeline-connector .particle {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      transform: translateY(-50%);
+      animation: flowParticle 2.5s ease-in-out infinite;
+      opacity: 0;
+    }
+    @keyframes flowParticle {
+      0%   { left: 0; opacity: 0; }
+      15%  { opacity: 1; }
+      85%  { opacity: 1; }
+      100% { left: calc(100% - 6px); opacity: 0; }
+    }
+
+    /* ═══ STAGE CARD ═══ */
+    .stage-card {
+      width: 190px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 20px;
+      cursor: pointer;
+      transition: border-color 0.3s, transform 0.2s, box-shadow 0.3s;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .stage-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: 12px 12px 0 0;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .stage-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .stage-card:hover::before { opacity: 1; }
+    .stage-card.active {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .stage-card.active::before { opacity: 1; }
+
+    /* Agent color accents */
+    .stage-card[data-stage="detect"]::before    { background: var(--emerald); }
+    .stage-card[data-stage="detect"].active      { border-color: var(--emerald); }
+    .stage-card[data-stage="analyze"]::before   { background: var(--blue); }
+    .stage-card[data-stage="analyze"].active     { border-color: var(--blue); }
+    .stage-card[data-stage="recommend"]::before { background: var(--violet); }
+    .stage-card[data-stage="recommend"].active   { border-color: var(--violet); }
+    .stage-card[data-stage="project"]::before   { background: var(--amber); }
+    .stage-card[data-stage="project"].active     { border-color: var(--amber); }
+    .stage-card[data-stage="learn"]::before     { background: var(--red); }
+    .stage-card[data-stage="learn"].active       { border-color: var(--red); }
+
+    .stage-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 24px;
+    }
+    .stage-card[data-stage="detect"] .stage-icon    { background: var(--emerald-muted); color: var(--emerald); }
+    .stage-card[data-stage="analyze"] .stage-icon   { background: var(--blue-muted); color: var(--blue); }
+    .stage-card[data-stage="recommend"] .stage-icon { background: var(--violet-muted); color: var(--violet); }
+    .stage-card[data-stage="project"] .stage-icon   { background: var(--amber-muted); color: var(--amber); }
+    .stage-card[data-stage="learn"] .stage-icon     { background: var(--red-muted); color: var(--red); }
+
+    .stage-number {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-faint);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .stage-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .stage-agent {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .stage-card[data-stage="detect"] .stage-agent    { color: var(--emerald); }
+    .stage-card[data-stage="analyze"] .stage-agent   { color: var(--blue); }
+    .stage-card[data-stage="recommend"] .stage-agent { color: var(--violet); }
+    .stage-card[data-stage="project"] .stage-agent   { color: var(--amber); }
+    .stage-card[data-stage="learn"] .stage-agent     { color: var(--red); }
+
+    .stage-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* ═══ FEEDBACK LOOP ═══ */
+    .feedback-loop {
+      text-align: center;
+      margin-bottom: 48px;
+      position: relative;
+      height: 48px;
+    }
+    .feedback-loop svg {
+      width: 100%;
+      max-width: 900px;
+      height: 48px;
+    }
+    .feedback-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--text-faint);
+      text-transform: uppercase;
+    }
+
+    /* ═══ DETAIL PANEL ═══ */
+    .detail-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 64px;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.5s ease, opacity 0.4s ease, margin 0.4s ease;
+    }
+    .detail-panel.open {
+      max-height: 800px;
+      opacity: 1;
+    }
+    .detail-inner {
+      padding: 40px;
+    }
+    .detail-headline {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .detail-body {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 720px;
+      margin-bottom: 32px;
+    }
+
+    /* Detail visual sections */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+    .detail-visual {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .detail-visual-title {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* Source grid (Stage 1) */
+    .source-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .source-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: var(--bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .source-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      background: var(--emerald-muted);
+      color: var(--emerald);
+    }
+    .source-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .source-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* Metric callout */
+    .metric-callout {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+
+    /* Tier badges (Stage 2) */
+    .tier-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .tier-row:last-child { border-bottom: none; }
+    .tier-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      min-width: 90px;
+      text-align: center;
+    }
+    .tier-badge--hot      { background: var(--red-muted); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+    .tier-badge--warm     { background: var(--amber-muted); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+    .tier-badge--nurture  { background: rgba(20,184,166,0.09); color: var(--teal); border: 1px solid rgba(20,184,166,0.2); }
+    .tier-badge--strategic { background: rgba(113,113,122,0.09); color: var(--text-muted); border: 1px solid var(--border); }
+    .tier-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Radar labels (Stage 2) */
+    .radar-list {
+      list-style: none;
+    }
+    .radar-list li {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .radar-list li:last-child { border-bottom: none; }
+    .radar-axis {
+      font-weight: 600;
+      color: var(--blue);
+      min-width: 160px;
+    }
+    .radar-question { color: var(--text-muted); }
+
+    /* Brief card (Stage 3) */
+    .brief-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .brief-row {
+      display: flex;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .brief-row:last-child { border-bottom: none; }
+    .brief-label {
+      font-weight: 600;
+      color: var(--text-muted);
+      min-width: 120px;
+      flex-shrink: 0;
+    }
+    .brief-value { color: var(--text); }
+
+    /* Revenue stack (Stage 4) */
+    .revenue-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .revenue-bar {
+      position: relative;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: #000;
+      overflow: hidden;
+    }
+    .revenue-bar span {
+      position: relative;
+      z-index: 1;
+    }
+    .revenue-bar-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      border-radius: 8px;
+      transition: width 1s ease-out;
+    }
+    .revenue-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Split bar (Stage 4) */
+    .split-bar {
+      display: flex;
+      height: 32px;
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+    .split-bar-segment {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: #000;
+    }
+
+    /* Loop diagram (Stage 5) */
+    .loop-steps {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .loop-step {
+      padding: 10px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+    }
+    .loop-arrow {
+      color: var(--red);
+      font-size: 18px;
+      padding: 0 6px;
+    }
+
+    /* Example callout */
+    .example-box {
+      background: var(--bg);
+      border-left: 3px solid;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+      margin-top: 16px;
+    }
+    .example-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .example-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    /* ═══ SECTION DIVIDER ═══ */
+    .section-divider {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .section-divider-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      background: var(--bg);
+      padding: 0 20px;
+      position: relative;
+    }
+    .section-divider::before {
+      content: '';
+      display: block;
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      position: relative;
+      top: 10px;
+    }
+
+    /* ═══ MODULE THUMBNAILS ═══ */
+    .modules-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 12px;
+    }
+    .module-thumb {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 12px;
+      text-align: center;
+      transition: border-color 0.3s, transform 0.2s;
+    }
+    .module-thumb:hover {
+      border-color: var(--border-active);
+      transform: translateY(-2px);
+    }
+    .module-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 10px;
+      font-size: 16px;
+      background: var(--emerald-muted);
+      color: var(--emerald);
+    }
+    .module-name {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .module-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .module-stages {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-faint);
+      letter-spacing: 0.5px;
+    }
+
+    /* ═══ FOOTER ═══ */
+    .footer {
+      text-align: center;
+      padding-top: 48px;
+      border-top: 1px solid var(--border);
+      margin-top: 64px;
+    }
+    .footer p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .footer strong {
+      color: var(--emerald);
+    }
+
+    /* ═══ CTA PROMPT ═══ */
+    .cta-prompt {
+      text-align: center;
+      margin-top: 12px;
+      margin-bottom: 20px;
+      opacity: 1;
+      transition: opacity 0.4s;
+    }
+    .cta-prompt.hidden { opacity: 0; }
+    .cta-prompt span {
+      font-size: 13px;
+      color: var(--text-faint);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50%      { opacity: 1; }
+    }
+
+    /* ═══ RESPONSIVE ═══ */
+    @media (max-width: 1100px) {
+      .pipeline { flex-wrap: wrap; gap: 12px; }
+      .pipeline-connector { display: none; }
+      .stage-card { width: 160px; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .modules-row { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .page { padding: 32px 16px 48px; }
+      .header h1 { font-size: 28px; }
+      .stage-card { width: 100%; }
+      .modules-row { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- ═══ HEADER ═══ -->
+    <header class="header">
+      <div class="header-label">Intelligence Pipeline</div>
+      <h1>How CTG Intelligence Works</h1>
+      <p>From raw market signals to scored prospects, expert matching, and revenue forecasting — in five stages.</p>
+    </header>
+
+    <!-- ═══ PIPELINE ═══ -->
+    <div class="pipeline" id="pipeline">
+
+      <!-- Stage 1: Detect -->
+      <div class="stage-card" data-stage="detect" onclick="toggleDetail('detect')">
+        <div class="stage-icon">&#9681;</div>
+        <div class="stage-number">Stage 1</div>
+        <div class="stage-title">Detect</div>
+        <div class="stage-agent">Scout Agent</div>
+        <div class="stage-subtitle">50+ sources monitored for buying signals</div>
+      </div>
+
+      <div class="pipeline-connector">
+        <div class="line"><div class="arrow"></div></div>
+        <div class="particle" style="background:var(--emerald); animation-delay:0s;"></div>
+        <div class="particle" style="background:var(--emerald); animation-delay:1.2s;"></div>
+      </div>
+
+      <!-- Stage 2: Analyze -->
+      <div class="stage-card" data-stage="analyze" onclick="toggleDetail('analyze')">
+        <div class="stage-icon">&#9881;</div>
+        <div class="stage-number">Stage 2</div>
+        <div class="stage-title">Score &amp; Rank</div>
+        <div class="stage-agent">Analyst Agent</div>
+        <div class="stage-subtitle">6-axis Sourcing Strain Index, 0 to 100</div>
+      </div>
+
+      <div class="pipeline-connector">
+        <div class="line"><div class="arrow"></div></div>
+        <div class="particle" style="background:var(--blue); animation-delay:0.4s;"></div>
+        <div class="particle" style="background:var(--blue); animation-delay:1.6s;"></div>
+      </div>
+
+      <!-- Stage 3: Recommend -->
+      <div class="stage-card" data-stage="recommend" onclick="toggleDetail('recommend')">
+        <div class="stage-icon">&#9733;</div>
+        <div class="stage-number">Stage 3</div>
+        <div class="stage-title">Match &amp; Brief</div>
+        <div class="stage-agent">Strategist Agent</div>
+        <div class="stage-subtitle">Expert matched, outreach strategy generated</div>
+      </div>
+
+      <div class="pipeline-connector">
+        <div class="line"><div class="arrow"></div></div>
+        <div class="particle" style="background:var(--violet); animation-delay:0.8s;"></div>
+        <div class="particle" style="background:var(--violet); animation-delay:2.0s;"></div>
+      </div>
+
+      <!-- Stage 4: Project -->
+      <div class="stage-card" data-stage="project" onclick="toggleDetail('project')">
+        <div class="stage-icon">&#9650;</div>
+        <div class="stage-number">Stage 4</div>
+        <div class="stage-title">Forecast</div>
+        <div class="stage-agent">Planner Agent</div>
+        <div class="stage-subtitle">Revenue projections, deal prioritization</div>
+      </div>
+
+      <div class="pipeline-connector">
+        <div class="line"><div class="arrow"></div></div>
+        <div class="particle" style="background:var(--amber); animation-delay:0.6s;"></div>
+        <div class="particle" style="background:var(--amber); animation-delay:1.8s;"></div>
+      </div>
+
+      <!-- Stage 5: Learn -->
+      <div class="stage-card" data-stage="learn" onclick="toggleDetail('learn')">
+        <div class="stage-icon">&#8635;</div>
+        <div class="stage-number">Stage 5</div>
+        <div class="stage-title">Improve</div>
+        <div class="stage-agent">Monitor Agent</div>
+        <div class="stage-subtitle">Outcomes tracked, model accuracy improves</div>
+      </div>
+    </div>
+
+    <!-- Feedback loop indicator -->
+    <div class="feedback-loop">
+      <svg viewBox="0 0 900 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 780 4 C 820 4, 850 24, 850 40 L 50 40 C 50 40, 20 24, 60 4"
+              stroke="var(--red)" stroke-width="1.5" stroke-dasharray="6 4"
+              fill="none" opacity="0.4"/>
+        <circle r="4" fill="var(--red)" opacity="0.8">
+          <animateMotion dur="4s" repeatCount="indefinite"
+            path="M 780 4 C 820 4, 850 24, 850 40 L 50 40 C 50 40, 20 24, 60 4"/>
+        </circle>
+        <text x="450" y="36" text-anchor="middle" class="feedback-label" fill="var(--text-faint)" font-size="10" font-family="JetBrains Mono" letter-spacing="1.5">FEEDBACK LOOP — OUTCOMES FEED BACK INTO SCORING</text>
+      </svg>
+    </div>
+
+    <!-- CTA prompt -->
+    <div class="cta-prompt" id="cta-prompt">
+      <span>Click any stage above to see how it works</span>
+    </div>
+
+    <!-- ═══ DETAIL PANELS ═══ -->
+
+    <!-- DETECT detail -->
+    <div class="detail-panel" id="detail-detect">
+      <div class="detail-inner">
+        <div class="detail-headline" style="color:var(--emerald)">The Scout watches the market so you don't have to</div>
+        <div class="detail-body">
+          Every day, the Scout scans over 50 data sources for signs that a company needs help choosing contact center technology. It looks for job postings, vendor announcements, published evaluations, conference registrations, and regulatory changes — and flags them in minutes, not months.
+        </div>
+        <div class="detail-grid">
+          <div class="detail-visual">
+            <div class="detail-visual-title">Data Sources Monitored</div>
+            <div class="source-grid">
+              <div class="source-item"><div class="source-icon">&#128101;</div><div><div class="source-label">LinkedIn</div><div class="source-desc">Job postings, leadership changes</div></div></div>
+              <div class="source-item"><div class="source-icon">&#128196;</div><div><div class="source-label">RFP Databases</div><div class="source-desc">Active vendor evaluations</div></div></div>
+              <div class="source-item"><div class="source-icon">&#9888;</div><div><div class="source-label">Vendor Notices</div><div class="source-desc">Platform end-of-life alerts</div></div></div>
+              <div class="source-item"><div class="source-icon">&#128197;</div><div><div class="source-label">Conferences</div><div class="source-desc">Industry event registrations</div></div></div>
+              <div class="source-item"><div class="source-icon">&#9878;</div><div><div class="source-label">Regulatory</div><div class="source-desc">Compliance changes</div></div></div>
+              <div class="source-item"><div class="source-icon">&#128188;</div><div><div class="source-label">Job Boards</div><div class="source-desc">Contact center hiring signals</div></div></div>
+              <div class="source-item"><div class="source-icon">&#128240;</div><div><div class="source-label">Press Releases</div><div class="source-desc">M&amp;A, restructuring</div></div></div>
+              <div class="source-item"><div class="source-icon">&#128187;</div><div><div class="source-label">Tech Databases</div><div class="source-desc">Platform usage tracking</div></div></div>
+            </div>
+          </div>
+          <div class="detail-visual">
+            <div class="detail-visual-title">How Fast?</div>
+            <div style="text-align:center; padding: 24px 0;">
+              <div style="font-family:var(--font-mono); font-size:48px; font-weight:700; color:var(--emerald);">2-6 hrs</div>
+              <div style="font-size:14px; color:var(--text-muted); margin-top:8px;">From signal publication to detection</div>
+            </div>
+            <div class="example-box" style="border-color:var(--emerald);">
+              <div class="example-label" style="color:var(--emerald);">Example Signal</div>
+              <div class="example-text">"Summit Healthcare posted 3 contact center architect positions on LinkedIn — cross-referenced with existing intelligence on their Avaya contract expiring June 2026."</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYZE detail -->
+    <div class="detail-panel" id="detail-analyze">
+      <div class="detail-inner">
+        <div class="detail-headline" style="color:var(--blue)">Every prospect gets a Sourcing Strain Score from 0 to 100</div>
+        <div class="detail-body">
+          The Analyst takes each signal and measures it against the Sourcing Strain Index — a scoring model with six dimensions. Higher scores mean the company is under more pressure and needs expert help more urgently. Scores update in real time as new signals arrive.
+        </div>
+        <div class="detail-grid">
+          <div class="detail-visual">
+            <div class="detail-visual-title">The Six Dimensions</div>
+            <ul class="radar-list">
+              <li><span class="radar-axis">Vendor Universe</span><span class="radar-question">How many vendors must they evaluate?</span></li>
+              <li><span class="radar-axis">Eval Complexity</span><span class="radar-question">How complicated is the buying process?</span></li>
+              <li><span class="radar-axis">Expertise Gap</span><span class="radar-question">Do they have specialists on staff?</span></li>
+              <li><span class="radar-axis">Timeline Pressure</span><span class="radar-question">How soon must they decide?</span></li>
+              <li><span class="radar-axis">Compliance Burden</span><span class="radar-question">What regulations apply?</span></li>
+              <li><span class="radar-axis">Stakeholders</span><span class="radar-question">How many decision-makers involved?</span></li>
+            </ul>
+          </div>
+          <div class="detail-visual">
+            <div class="detail-visual-title">Priority Tiers</div>
+            <div class="tier-row">
+              <span class="tier-badge tier-badge--hot">HOT</span>
+              <span class="tier-desc">Score 75+ &mdash; Needs help now. Active evaluation underway.</span>
+            </div>
+            <div class="tier-row">
+              <span class="tier-badge tier-badge--warm">WARM</span>
+              <span class="tier-desc">Score 40-74 &mdash; Growing pressure. Engagement window opening.</span>
+            </div>
+            <div class="tier-row">
+              <span class="tier-badge tier-badge--nurture">NURTURE</span>
+              <span class="tier-desc">Score 20-39 &mdash; Early signals. Worth monitoring.</span>
+            </div>
+            <div class="tier-row">
+              <span class="tier-badge tier-badge--strategic">STRATEGIC</span>
+              <span class="tier-desc">Under 20 &mdash; Long-term opportunity. Not urgent yet.</span>
+            </div>
+            <div class="example-box" style="border-color:var(--blue); margin-top:20px;">
+              <div class="example-label" style="color:var(--blue);">Example</div>
+              <div class="example-text">"Meridian Health scores 82 (HOT) — Avaya end-of-life forcing migration, board-mandated AI strategy by Q3, HIPAA compliance requirements."</div>
+            </div>
+          </div>
+        </div>
+        <div class="metric-callout" style="background:var(--blue-muted); color:var(--blue); border:1px solid rgba(59,130,246,0.2);">94% scoring accuracy &nbsp;|&nbsp; 12 enrichment sources &nbsp;|&nbsp; Real-time recalculation</div>
+      </div>
+    </div>
+
+    <!-- RECOMMEND detail -->
+    <div class="detail-panel" id="detail-recommend">
+      <div class="detail-inner">
+        <div class="detail-headline" style="color:var(--violet)">The right expert, the right message, the right moment</div>
+        <div class="detail-body">
+          The Strategist generates a custom engagement plan for each high-priority prospect. It identifies which specialist ("Guru") has the deepest expertise for that exact situation, recommends the best way to make contact, and crafts the right opening message.
+        </div>
+        <div class="detail-grid">
+          <div class="detail-visual">
+            <div class="detail-visual-title">Sample Outreach Brief</div>
+            <div class="brief-card">
+              <div class="brief-row">
+                <span class="brief-label">Prospect</span>
+                <span class="brief-value">Summit Healthcare</span>
+              </div>
+              <div class="brief-row">
+                <span class="brief-label">Recommended Guru</span>
+                <span class="brief-value">Rebecca Chen &mdash; Healthcare CCaaS specialist, 12 years Avaya migration experience</span>
+              </div>
+              <div class="brief-row">
+                <span class="brief-label">Channel</span>
+                <span class="brief-value">Conference panel (HIMSS 2026) + LinkedIn InMail sequence</span>
+              </div>
+              <div class="brief-row">
+                <span class="brief-label">Match Confidence</span>
+                <span class="brief-value" style="color:var(--violet); font-weight:700;">94%</span>
+              </div>
+            </div>
+          </div>
+          <div class="detail-visual">
+            <div class="detail-visual-title">Three Outputs</div>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <div style="padding:14px 18px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+                <div style="font-weight:700; font-size:14px; color:var(--violet); margin-bottom:4px;">Guru Match</div>
+                <div style="font-size:13px; color:var(--text-secondary);">Which specialist has the deepest expertise for this prospect's exact situation</div>
+              </div>
+              <div style="padding:14px 18px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+                <div style="font-weight:700; font-size:14px; color:var(--violet); margin-bottom:4px;">Channel Strategy</div>
+                <div style="font-size:13px; color:var(--text-secondary);">How to make first contact — conference, LinkedIn, email, referral, or direct outreach</div>
+              </div>
+              <div style="padding:14px 18px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+                <div style="font-weight:700; font-size:14px; color:var(--violet); margin-bottom:4px;">Message Angle</div>
+                <div style="font-size:13px; color:var(--text-secondary);">What to lead with based on their specific pain points and industry context</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="metric-callout" style="background:var(--violet-muted); color:var(--violet); border:1px solid rgba(167,139,250,0.2);">90 specialized Gurus &nbsp;|&nbsp; 5 engagement channels &nbsp;|&nbsp; Auto-generated briefs</div>
+      </div>
+    </div>
+
+    <!-- PROJECT detail -->
+    <div class="detail-panel" id="detail-project">
+      <div class="detail-inner">
+        <div class="detail-headline" style="color:var(--amber)">Every deal becomes a revenue stream that never stops</div>
+        <div class="detail-body">
+          The Planner translates pipeline intelligence into financial projections. It models commission revenue for every deal and projects cumulative returns over three years. Because commissions are perpetual, every closed deal compounds — revenue grows even without new sales.
+        </div>
+        <div class="detail-grid">
+          <div class="detail-visual">
+            <div class="detail-visual-title">Perpetual Revenue Stack</div>
+            <div class="revenue-bars" id="revenue-bars">
+              <div>
+                <div class="revenue-bar" style="background:var(--surface-alt);">
+                  <div class="revenue-bar-fill" style="background:var(--amber); width:0%;" data-target="33"></div>
+                  <span>Year 1 &nbsp;&mdash;&nbsp; $720K</span>
+                </div>
+                <div class="revenue-label">8 new deals</div>
+              </div>
+              <div>
+                <div class="revenue-bar" style="background:var(--surface-alt);">
+                  <div class="revenue-bar-fill" style="background:var(--amber); width:0%;" data-target="66"></div>
+                  <span>Year 2 &nbsp;&mdash;&nbsp; $1.44M</span>
+                </div>
+                <div class="revenue-label">8 new + 8 existing deals still paying</div>
+              </div>
+              <div>
+                <div class="revenue-bar" style="background:var(--surface-alt);">
+                  <div class="revenue-bar-fill" style="background:var(--amber); width:0%;" data-target="100"></div>
+                  <span>Year 3 &nbsp;&mdash;&nbsp; $2.16M</span>
+                </div>
+                <div class="revenue-label">8 new + 16 existing — revenue compounds without re-selling</div>
+              </div>
+            </div>
+          </div>
+          <div class="detail-visual">
+            <div class="detail-visual-title">Commission Split</div>
+            <div style="padding:16px 0;">
+              <div class="split-bar">
+                <div class="split-bar-segment" style="width:80%; background:var(--amber);">GURU 80%</div>
+                <div class="split-bar-segment" style="width:20%; background:var(--emerald);">CTG 20%</div>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-top:12px;">
+                <div>
+                  <div style="font-size:12px; color:var(--text-muted);">Guru Payout</div>
+                  <div style="font-family:var(--font-mono); font-size:20px; font-weight:700; color:var(--amber);">$108K</div>
+                  <div style="font-size:11px; color:var(--text-faint);">per deal, per year</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:12px; color:var(--text-muted);">Platform Fee</div>
+                  <div style="font-family:var(--font-mono); font-size:20px; font-weight:700; color:var(--emerald);">$27K</div>
+                  <div style="font-size:11px; color:var(--text-faint);">per deal, per year</div>
+                </div>
+              </div>
+            </div>
+            <div class="example-box" style="border-color:var(--amber);">
+              <div class="example-label" style="color:var(--amber);">The Perpetual Model</div>
+              <div class="example-text">"Close 8 deals in Year 1, and those commissions keep paying in Year 2, Year 3, and beyond — while you close new deals on top."</div>
+            </div>
+          </div>
+        </div>
+        <div class="metric-callout" style="background:var(--amber-muted); color:var(--amber); border:1px solid rgba(245,158,11,0.2);">3-year revenue projection &nbsp;|&nbsp; Portfolio diversification &nbsp;|&nbsp; Deal prioritization</div>
+      </div>
+    </div>
+
+    <!-- LEARN detail -->
+    <div class="detail-panel" id="detail-learn">
+      <div class="detail-inner">
+        <div class="detail-headline" style="color:var(--red)">The system gets smarter with every outcome</div>
+        <div class="detail-body">
+          The Monitor closes the loop. It tracks what happened with each prospect — did they engage? Did the expert match work? Did the deal close? These outcomes feed back into the scoring model, so predictions get more accurate over time. Every quarter, the model recalibrates itself.
+        </div>
+        <div class="detail-grid">
+          <div class="detail-visual">
+            <div class="detail-visual-title">Feedback Loop</div>
+            <div class="loop-steps">
+              <div class="loop-step">Outcome<br>Tracked</div>
+              <div class="loop-arrow">&#10140;</div>
+              <div class="loop-step">Score<br>Adjusted</div>
+              <div class="loop-arrow">&#10140;</div>
+              <div class="loop-step">Model<br>Recalibrated</div>
+              <div class="loop-arrow">&#10140;</div>
+              <div class="loop-step">Better<br>Predictions</div>
+            </div>
+          </div>
+          <div class="detail-visual">
+            <div class="detail-visual-title">Accuracy Trajectory</div>
+            <div style="text-align:center; padding:20px 0;">
+              <div style="display:flex; align-items:center; justify-content:center; gap:24px;">
+                <div>
+                  <div style="font-family:var(--font-mono); font-size:36px; font-weight:700; color:var(--text-muted);">87%</div>
+                  <div style="font-size:12px; color:var(--text-faint);">Current</div>
+                </div>
+                <div style="font-size:32px; color:var(--red);">&#10140;</div>
+                <div>
+                  <div style="font-family:var(--font-mono); font-size:36px; font-weight:700; color:var(--red);">92%+</div>
+                  <div style="font-size:12px; color:var(--text-faint);">Target by Q4</div>
+                </div>
+              </div>
+            </div>
+            <div class="example-box" style="border-color:var(--red);">
+              <div class="example-label" style="color:var(--red);">Continuous Learning</div>
+              <div class="example-text">"Every engagement outcome makes the next prediction more accurate. The system doesn't just detect — it learns which signals actually lead to closed deals."</div>
+            </div>
+          </div>
+        </div>
+        <div class="metric-callout" style="background:var(--red-muted); color:var(--red); border:1px solid rgba(239,68,68,0.2);">Continuous feedback &nbsp;|&nbsp; Quarterly recalibration &nbsp;|&nbsp; Improving accuracy</div>
+      </div>
+    </div>
+
+    <!-- ═══ MODULES SECTION ═══ -->
+    <div class="section-divider">
+      <span class="section-divider-label">What You See in the Platform</span>
+    </div>
+
+    <div class="modules-row">
+      <div class="module-thumb">
+        <div class="module-icon">&#9670;</div>
+        <div class="module-name">Command Center</div>
+        <div class="module-desc">Your war room — pipeline overview, live signals, top prospects at a glance</div>
+        <div class="module-stages">Stages 1-4</div>
+      </div>
+      <div class="module-thumb">
+        <div class="module-icon">&#9673;</div>
+        <div class="module-name">Pipeline Intel</div>
+        <div class="module-desc">Deep dive on every prospect — scores, signals, contact intelligence</div>
+        <div class="module-stages">Stages 1-2</div>
+      </div>
+      <div class="module-thumb">
+        <div class="module-icon">&#9671;</div>
+        <div class="module-name">Strain Simulator</div>
+        <div class="module-desc">Test any scenario — adjust the six strain dimensions interactively</div>
+        <div class="module-stages">Stage 2</div>
+      </div>
+      <div class="module-thumb">
+        <div class="module-icon" style="background:var(--amber-muted); color:var(--amber);">&#9651;</div>
+        <div class="module-name">Revenue Model</div>
+        <div class="module-desc">See what deals are worth — perpetual commission projections</div>
+        <div class="module-stages">Stage 4</div>
+      </div>
+      <div class="module-thumb">
+        <div class="module-icon" style="background:var(--blue-muted); color:var(--blue);">&#9678;</div>
+        <div class="module-name">Agent Architecture</div>
+        <div class="module-desc">Watch the five intelligence agents work in a live simulation</div>
+        <div class="module-stages">Stages 1-5</div>
+      </div>
+      <div class="module-thumb">
+        <div class="module-icon" style="background:var(--red-muted); color:var(--red);">&#9681;</div>
+        <div class="module-name">Competitive Map</div>
+        <div class="module-desc">Know the landscape — how CTG compares to every alternative</div>
+        <div class="module-stages">Market Context</div>
+      </div>
+      <div class="module-thumb">
+        <div class="module-icon" style="background:var(--amber-muted); color:var(--amber);">&#9681;</div>
+        <div class="module-name">Build Roadmap</div>
+        <div class="module-desc">The build plan — 4 phases from foundation to full platform</div>
+        <div class="module-stages">Implementation</div>
+      </div>
+    </div>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="footer">
+      <p><strong>CTG Sourcing Intelligence Platform</strong> &mdash; Turning market noise into pipeline clarity.</p>
+    </footer>
+
+  </div>
+
+  <!-- ═══ JAVASCRIPT ═══ -->
+  <script>
+    (function() {
+      'use strict';
+
+      var activeStage = null;
+      var stages = ['detect', 'analyze', 'recommend', 'project', 'learn'];
+
+      window.toggleDetail = function(stage) {
+        var panel = document.getElementById('detail-' + stage);
+        var card = document.querySelector('[data-stage="' + stage + '"]');
+        var cta = document.getElementById('cta-prompt');
+
+        // Hide CTA after first click
+        if (cta) cta.classList.add('hidden');
+
+        if (activeStage === stage) {
+          // Close current
+          panel.classList.remove('open');
+          card.classList.remove('active');
+          activeStage = null;
+          return;
+        }
+
+        // Close any open panel
+        stages.forEach(function(s) {
+          var p = document.getElementById('detail-' + s);
+          var c = document.querySelector('[data-stage="' + s + '"]');
+          if (p) p.classList.remove('open');
+          if (c) c.classList.remove('active');
+        });
+
+        // Open selected
+        panel.classList.add('open');
+        card.classList.add('active');
+        activeStage = stage;
+
+        // Animate revenue bars if opening project panel
+        if (stage === 'project') {
+          setTimeout(function() {
+            var fills = document.querySelectorAll('#detail-project .revenue-bar-fill');
+            fills.forEach(function(fill) {
+              fill.style.width = fill.dataset.target + '%';
+            });
+          }, 100);
+        }
+
+        // Scroll panel into view
+        setTimeout(function() {
+          panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 150);
+      };
+    })();
+  </script>
+</body>
+</html>
