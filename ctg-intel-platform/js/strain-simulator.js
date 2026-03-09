@@ -103,7 +103,7 @@
       var btn = document.createElement('button');
       btn.className = 'ss-preset-btn';
       btn.textContent = name;
-      btn.addEventListener('click', function() {
+      _on(btn, 'click', function() {
         presetRow.querySelectorAll('.ss-preset-btn').forEach(function(b) { b.classList.remove('active'); });
         btn.classList.add('active');
         var vals = PRESETS[name];

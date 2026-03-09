@@ -55,7 +55,7 @@
       '<div>Expiry: <span style="color:var(--red)">' + prospect.contractExpiry + '</span></div>';
     card.appendChild(stats);
 
-    card.addEventListener('click', function() { openDetail(prospect); });
+    _on(card, 'click', function() { openDetail(prospect); });
     return card;
   }
 
@@ -67,7 +67,7 @@
     var closeBtn = document.createElement('button');
     closeBtn.className = 'pi-close-btn';
     closeBtn.innerHTML = '&times;';
-    closeBtn.addEventListener('click', function() {
+    _on(closeBtn, 'click', function() {
       _panel.classList.remove('pi-panel-open');
       _panel.innerHTML = '';
     });
@@ -189,8 +189,7 @@
     var grid = _container.querySelector('.pi-card-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    prospects.sort(function(a, b) { return b.score - a.score; });
-    prospects.forEach(function(p) { grid.appendChild(buildCard(p)); });
+    prospects.slice().sort(function(a, b) { return b.score - a.score; }).forEach(function(p) { grid.appendChild(buildCard(p)); });
   }
 
   function init(container, panel) {

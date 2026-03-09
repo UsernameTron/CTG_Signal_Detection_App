@@ -129,7 +129,7 @@
       if (i < Data.roadmapPhases.length - 1) {
         item.innerHTML += '<div class="br-timeline-line"></div>';
       }
-      item.addEventListener('click', function() {
+      _on(item, 'click', function() {
         _activePhase = i;
         nav.querySelectorAll('.br-timeline-item').forEach(function(el, j) {
           el.classList.toggle('active', j === i);
