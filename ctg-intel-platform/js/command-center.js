@@ -59,7 +59,7 @@
         { label: 'STRATEGIC', count: counts.STRATEGIC, color: 'text-faint' }
       ],
       onSelect: function(tier) {
-        var filtered = tier === 'ALL' ? Data.prospects : Data.prospects.filter(function(p) { return p.tier === tier; });
+        var filtered = tier === 'ALL' ? Data.prospects.slice() : Data.prospects.filter(function(p) { return p.tier === tier; });
         filtered.sort(function(a, b) { return b.score - a.score; });
         if (_tableEl) _tableEl.updateRows(filtered);
       }

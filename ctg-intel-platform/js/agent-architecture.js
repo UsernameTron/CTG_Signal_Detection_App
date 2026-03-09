@@ -84,22 +84,22 @@
 
     var runBtn = Components.ActionButton({
       label: !_simRunning ? 'Run Agent Chain' : _simPaused ? 'Resume' : 'Pause',
-      variant: 'primary',
-      onClick: function() {
-        if (!_simRunning) {
-          _simRunning = true;
-          _simPaused = false;
-          _simIndex = 0;
-          buildPanel();
-          runSimulation();
-        } else if (!_simPaused) {
-          _simPaused = true;
-          runBtn.textContent = 'Resume';
-        } else {
-          _simPaused = false;
-          runBtn.textContent = 'Pause';
-          runSimulation();
-        }
+      variant: 'primary'
+    });
+    _on(runBtn, 'click', function() {
+      if (!_simRunning) {
+        _simRunning = true;
+        _simPaused = false;
+        _simIndex = 0;
+        buildPanel();
+        runSimulation();
+      } else if (!_simPaused) {
+        _simPaused = true;
+        runBtn.textContent = 'Resume';
+      } else {
+        _simPaused = false;
+        runBtn.textContent = 'Pause';
+        runSimulation();
       }
     });
     btnRow.appendChild(runBtn);
@@ -107,15 +107,15 @@
     if (_simRunning) {
       var resetBtn = Components.ActionButton({
         label: 'Reset',
-        variant: 'ghost',
-        onClick: function() {
-          _simRunning = false;
-          _simPaused = false;
-          _simIndex = 0;
-          _timers.forEach(function(id) { clearTimeout(id); });
-          _timers = [];
-          buildPanel();
-        }
+        variant: 'ghost'
+      });
+      _on(resetBtn, 'click', function() {
+        _simRunning = false;
+        _simPaused = false;
+        _simIndex = 0;
+        _timers.forEach(function(id) { clearTimeout(id); });
+        _timers = [];
+        buildPanel();
       });
       btnRow.appendChild(resetBtn);
     }
